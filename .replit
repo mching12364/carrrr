@@ -2,4 +2,20 @@ modules = ["nodejs-20"]
 
 [[ports]]
 localPort = 3000
-externalPort = 80
+externalPort = 3000
+
+[workflows]
+runButton = "Run"
+
+[[workflows.workflow]]
+name = "Run"
+author = 41205296
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev -- -H 0.0.0.0"
+
+[deployment]
+run = ["sh", "-c", "npm run start -- -H 0.0.0.0"]
+build = ["sh", "-c", "npm run build"]
