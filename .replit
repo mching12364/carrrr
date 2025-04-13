@@ -14,7 +14,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev -- -H 0.0.0.0"
+args = "npm run dev -- -p 3000 -H 0.0.0.0"
 
 [deployment]
 run = ["sh", "-c", "npm run start -- -H 0.0.0.0"]

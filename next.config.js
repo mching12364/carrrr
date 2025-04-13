@@ -1,8 +1,5 @@
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@google/generative-ai'],
-  },
-};
+const nextConfig = {};
 
 module.exports = nextConfig;
