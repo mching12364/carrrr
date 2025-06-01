@@ -146,9 +146,6 @@ export async function POST(request) {
 }
 
 // Increase the body size limit for image uploads
-export const config = {
-  api: {
-    bodyParser: false,
-    responseLimit: false,
-  },
-};
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+// Remove the old 'export const config = ...' entirely
