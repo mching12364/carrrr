@@ -62,20 +62,27 @@ export default function Home() {
   };
 
   const handleImageUpload = async (imageFile) => {
+    console.log('handleImageUpload called with:', imageFile);
+    
     setIsLoading(true);
     setError(null);
     setCarData(null);
     
     try {
+      console.log('Creating FormData...');
       const formData = new FormData();
       formData.append('image', imageFile);
       
+      console.log('Sending request to API...');
       const response = await fetch('/api/identify-car', {
         method: 'POST',
         body: formData,
       });
       
+      console.log('Response status:', response.status);
+      
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to identify car');
@@ -85,6 +92,7 @@ export default function Home() {
         throw new Error(data.error);
       }
       
+      console.log('Setting car data:', data);
       setCarData(data);
     } catch (err) {
       console.error('Error identifying car:', err);
@@ -95,6 +103,9 @@ export default function Home() {
   };
 
   const getCarSpecifications = async () => {
+    console.log('getCarSpecifications called');
+    console.log('Selected values:', { selectedMake, selectedModel, selectedYear });
+    
     if (!selectedMake || !selectedModel || !selectedYear) {
       setError('Please select make, model, and year');
       return;
@@ -105,6 +116,7 @@ export default function Home() {
     setCarData(null);
 
     try {
+      console.log('Sending dropdown request to API...');
       const response = await fetch('/api/identify-car', {
         method: 'POST',
         headers: {
@@ -117,7 +129,10 @@ export default function Home() {
         }),
       });
       
+      console.log('Dropdown response status:', response.status);
+      
       const data = await response.json();
+      console.log('Dropdown response data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to get car specifications');
@@ -127,6 +142,7 @@ export default function Home() {
         throw new Error(data.error);
       }
       
+      console.log('Setting car data from dropdown:', data);
       setCarData(data);
     } catch (err) {
       console.error('Error getting car specs:', err);
