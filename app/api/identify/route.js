@@ -720,7 +720,6 @@ function getAcceleration(make, model, hp) {
   if (model.includes('Prius')) baseTime = 9.8;
   
   return Math.round(baseTime * 10) / 10;
-}']([^"']+)["']/i);
         const modelMatch = textResponse.match(/model["']?\s*:\s*["']([^"']+)["']/i);
         
         if (makeMatch || modelMatch) {
