@@ -1,204 +1,318 @@
 'use client';
 
 import { useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import ImageUploader from './components/ImageUploader';
+import CarDetails from './components/CarDetails';
+import LoadingState from './components/LoadingState';
 
 export default function Home() {
+  const [selectedMake, setSelectedMake] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
   const [carData, setCarData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [uploadFailed, setUploadFailed] = useState(false);
+  const [activeMethod, setActiveMethod] = useState('dropdown'); // 'dropdown' or 'photo'
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
-    },
-    maxFiles: 1,
-    maxSize: 10485760, // 10MB
-    onDrop: acceptedFiles => {
-      if (acceptedFiles.length > 0) {
-        handleImageUpload(acceptedFiles[0]);
-      }
-    },
-    onDropRejected: () => {
-      setUploadFailed(true);
-      setError("Please upload a valid image file (JPG, PNG) under 10MB.");
-    }
-  });
+  // Car makes data
+  const carMakes = [
+    'Toyota', 'Honda', 'Ford', 'Chevrolet', 'BMW', 'Mercedes-Benz', 
+    'Audi', 'Volkswagen', 'Nissan', 'Hyundai', 'Kia', 'Mazda',
+    'Subaru', 'Lexus', 'Acura', 'Infiniti', 'Cadillac', 'Lincoln',
+    'Jeep', 'Ram', 'Dodge', 'Chrysler', 'Buick', 'GMC', 'Volvo',
+    'Jaguar', 'Land Rover', 'Porsche', 'Tesla', 'Genesis'
+  ].sort();
 
-  const handleImageUpload = async (file) => {
+  // Sample models for different makes
+  const carModels = {
+    'Toyota': ['Camry', 'Corolla', 'RAV4', 'Highlander', 'Prius', 'Tacoma', 'Tundra', 'Sienna', 'Avalon', 'C-HR'],
+    'Honda': ['Civic', 'Accord', 'CR-V', 'Pilot', 'Odyssey', 'HR-V', 'Passport', 'Ridgeline', 'Insight', 'Fit'],
+    'Ford': ['F-150', 'Escape', 'Explorer', 'Mustang', 'Edge', 'Expedition', 'Ranger', 'Bronco', 'Transit', 'Maverick'],
+    'Chevrolet': ['Silverado', 'Equinox', 'Malibu', 'Tahoe', 'Suburban', 'Traverse', 'Camaro', 'Corvette', 'Blazer', 'Colorado'],
+    'BMW': ['3 Series', '5 Series', '7 Series', 'X3', 'X5', 'X7', 'Z4', 'i3', 'i4', 'iX'],
+    'Mercedes-Benz': ['C-Class', 'E-Class', 'S-Class', 'GLC', 'GLE', 'GLS', 'A-Class', 'CLA', 'G-Class', 'EQS'],
+    'Audi': ['A3', 'A4', 'A6', 'A8', 'Q3', 'Q5', 'Q7', 'Q8', 'e-tron', 'TT'],
+    'Tesla': ['Model S', 'Model 3', 'Model X', 'Model Y', 'Cybertruck'],
+    'Nissan': ['Altima', 'Sentra', 'Rogue', 'Pathfinder', 'Murano', 'Titan', 'Frontier', 'Leaf', 'Ariya', '370Z'],
+    'Hyundai': ['Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Palisade', 'Kona', 'Venue', 'Genesis', 'Ioniq', 'Veloster']
+  };
+
+  // Generate years from 2010 to current year
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2009 }, (_, i) => currentYear - i);
+
+  const handleMakeChange = (e) => {
+    const make = e.target.value;
+    setSelectedMake(make);
+    setSelectedModel(''); // Reset model when make changes
+    setCarData(null);
+    setError(null);
+  };
+
+  const handleModelChange = (e) => {
+    setSelectedModel(e.target.value);
+    setCarData(null);
+    setError(null);
+  };
+
+  const handleYearChange = (e) => {
+    setSelectedYear(e.target.value);
+    setCarData(null);
+    setError(null);
+  };
+
+  const handleImageUpload = async (imageFile) => {
+    setIsLoading(true);
+    setError(null);
+    setCarData(null);
+    
     try {
-      setIsLoading(true);
-      setError(null);
-      setCarData(null);
-      setUploadFailed(false);
-
-      // Create a preview URL for the image
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-
-      // Create form data to send the image to the API
       const formData = new FormData();
-      formData.append('image', file);
-
-      console.log("Sending image to API...");
-
-      // Call our API route
-      const response = await fetch('/api/identify', {
+      formData.append('image', imageFile);
+      
+      const response = await fetch('/api/identify-car', {
         method: 'POST',
         body: formData,
       });
-
-      console.log("API Response status:", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("API Error:", errorData);
-        throw new Error(errorData.error || `Failed to identify the car (Status: ${response.status})`);
-      }
-
+      
       const data = await response.json();
-      console.log("Car data received:", data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to identify car');
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
       setCarData(data);
     } catch (err) {
-      console.error("Upload Error:", err);
-      setError(err.message || 'An error occurred while identifying the car');
+      console.error('Error identifying car:', err);
+      setError('Failed to identify the car from the image. Please try the dropdown method or another image.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getCarSpecifications = async () => {
+    if (!selectedMake || !selectedModel || !selectedYear) {
+      setError('Please select make, model, and year');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setCarData(null);
+
+    try {
+      const response = await fetch('/api/identify-car', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          make: selectedMake,
+          model: selectedModel,
+          year: selectedYear
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get car specifications');
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setCarData(data);
+    } catch (err) {
+      console.error('Error getting car specs:', err);
+      setError('Failed to get car specifications. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedMake('');
+    setSelectedModel('');
+    setSelectedYear('');
+    setCarData(null);
+    setError(null);
+  };
+
+  const switchMethod = (method) => {
+    setActiveMethod(method);
+    setCarData(null);
+    setError(null);
+    resetForm();
+  };
+
+  const availableModels = carModels[selectedMake] || [];
+
   return (
-    <main className="min-h-screen p-4 md:p-8 bg-gray-50">
-      <div className="max-w-5xl mx-auto">
-        <header className="text-center py-8">
-          <h1 className="text-4xl font-bold text-blue-600">Car Identifier</h1>
-          <p className="mt-2 text-gray-600">Upload a car image and get detailed specifications instantly</p>
-        </header>
-
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="p-6 md:p-8">
-            {!imagePreview && !uploadFailed && (
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">
-                  Identify Any Car in Seconds
-                </h2>
-                <p className="text-gray-600 mb-8">
-                  Upload an image of a car and our AI will identify its make, model, and specifications.
-                </p>
-
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${
-                    isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'
-                  }`}
-                >
-                  <input {...getInputProps()} />
-                  <div className="flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <p className="text-lg font-medium">
-                      {isDragActive ? "Drop your image here" : "Drag & drop a car image, or click to browse"}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Supports JPG, PNG (max 10MB)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {(imagePreview || uploadFailed) && (
-              <div className="grid md:grid-cols-2 gap-8">
-                {imagePreview && (
-                  <div className="order-1 md:order-1">
-                    <div className="bg-gray-100 rounded-lg overflow-hidden">
-                      <img 
-                        src={imagePreview} 
-                        alt="Uploaded car" 
-                        className="w-full h-auto object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className={`order-2 md:order-2 ${!imagePreview ? 'md:col-span-2' : ''}`}>
-                  {isLoading ? (
-                    <div className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                      <h3 className="text-xl font-medium text-gray-800">Identifying your car...</h3>
-                      <p className="text-gray-600 mt-2">
-                        Our AI is analyzing the image to identify the make, model and specifications.
-                      </p>
-                    </div>
-                  ) : error ? (
-                    <div className="p-6 bg-red-50 text-red-700 rounded-lg">
-                      <h3 className="text-xl font-medium">Error Occurred</h3>
-                      <p className="mt-2">{error}</p>
-                      <div className="mt-6 flex flex-wrap gap-4">
-                        <button 
-                          onClick={() => {
-                            setImagePreview(null);
-                            setError(null);
-                            setUploadFailed(false);
-                          }}
-                          className="px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                          Try Again
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    carData && (
-                      <div className="space-y-6">
-                        <div>
-                          <h2 className="text-3xl font-bold text-blue-600">
-                            {carData.make} {carData.model}
-                          </h2>
-                          {carData.year && <p className="text-xl text-gray-600">{carData.year}</p>}
-                        </div>
-
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-semibold">Specifications</h3>
-                          <div className="grid grid-cols-1 gap-3">
-                            {carData.specifications.map((spec, index) => (
-                              <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                                <p className="text-sm text-gray-500">{spec.name}</p>
-                                <p className="font-medium">{spec.value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  )}
-
-                  {!isLoading && !error && imagePreview && (
-                    <div className="mt-6">
-                      <button 
-                        onClick={() => {
-                          setImagePreview(null);
-                          setCarData(null);
-                          setError(null);
-                          setUploadFailed(false);
-                        }}
-                        className="px-5 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                      >
-                        Upload New Image
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="text-4xl md:text-5xl font-bold text-center mb-2">Car Identifier</h1>
+        <p className="text-xl text-center text-gray-300 mb-10">
+          Identify cars by uploading a photo or selecting from dropdown menus
+        </p>
+        
+        <div className="max-w-3xl mx-auto">
+          {/* Method Selection Tabs */}
+          <div className="flex mb-8 bg-white/10 backdrop-blur-md rounded-xl p-2 border border-white/20">
+            <button
+              onClick={() => switchMethod('dropdown')}
+              className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center ${
+                activeMethod === 'dropdown'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Select Car Details
+            </button>
+            <button
+              onClick={() => switchMethod('photo')}
+              className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center ${
+                activeMethod === 'photo'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Upload Photo
+            </button>
           </div>
-        </div>
 
-        <footer className="mt-12 text-center text-gray-500 text-sm">
-          <p>Car Identifier &copy; {new Date().getFullYear()} • Powered by Google Gemini AI</p>
-        </footer>
+          {/* Dropdown Method */}
+          {activeMethod === 'dropdown' && (
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl mb-8">
+              <h2 className="text-2xl font-semibold mb-6 flex items-center">
+                <svg className="w-6 h-6 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Select Your Vehicle
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Make Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Car Make
+                  </label>
+                  <select
+                    value={selectedMake}
+                    onChange={handleMakeChange}
+                    className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={isLoading}
+                  >
+                    <option value="">Select Make</option>
+                    {carMakes.map((make) => (
+                      <option key={make} value={make} className="bg-gray-800">
+                        {make}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Model Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Car Model
+                  </label>
+                  <select
+                    value={selectedModel}
+                    onChange={handleModelChange}
+                    className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={!selectedMake || isLoading}
+                  >
+                    <option value="">Select Model</option>
+                    {availableModels.map((model) => (
+                      <option key={model} value={model} className="bg-gray-800">
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Year Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Year
+                  </label>
+                  <select
+                    value={selectedYear}
+                    onChange={handleYearChange}
+                    className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={!selectedModel || isLoading}
+                  >
+                    <option value="">Select Year</option>
+                    {years.map((year) => (
+                      <option key={year} value={year} className="bg-gray-800">
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Action Buttons for Dropdown */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={getCarSpecifications}
+                  disabled={!selectedMake || !selectedModel || !selectedYear || isLoading}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Getting Specifications...' : 'Get Car Specifications'}
+                </button>
+
+                <button
+                  onClick={resetForm}
+                  disabled={isLoading}
+                  className="bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Photo Upload Method */}
+          {activeMethod === 'photo' && (
+            <div className="mb-8">
+              <ImageUploader onImageUpload={handleImageUpload} disabled={isLoading} />
+            </div>
+          )}
+          
+          {isLoading && <LoadingState />}
+          
+          {error && (
+            <div className="mt-8 p-4 bg-red-900/30 border border-red-500 rounded-lg">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-red-300">{error}</span>
+              </div>
+              {activeMethod === 'photo' && (
+                <p className="text-red-200 text-sm mt-2">
+                  Try the dropdown method for more reliable results.
+                </p>
+              )}
+            </div>
+          )}
+          
+          {carData && !isLoading && <CarDetails carData={carData} />}
+        </div>
       </div>
     </main>
   );
