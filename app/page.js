@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import ImageUploader from './components/ImageUploader';
+import ImageUploader from './components/FileUpload';
 import CarDetails from './components/CarDetails';
 import LoadingState from './components/LoadingState';
 
