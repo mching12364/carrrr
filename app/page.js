@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import ImageUploader from './components/FileUpload';
+import FileUpload from './components/FileUpload';
 import CarDetails from './components/CarDetails';
 import LoadingState from './components/LoadingState';
 
@@ -74,7 +74,7 @@ export default function Home() {
       formData.append('image', imageFile);
       
       console.log('Sending request to API...');
-      const response = await fetch('/api/identify-car', {
+      const response = await fetch('/api/identify', {
         method: 'POST',
         body: formData,
       });
@@ -117,7 +117,7 @@ export default function Home() {
 
     try {
       console.log('Sending dropdown request to API...');
-      const response = await fetch('/api/identify-car', {
+      const response = await fetch('/api/identify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -305,7 +305,7 @@ export default function Home() {
           {/* Photo Upload Method */}
           {activeMethod === 'photo' && (
             <div className="mb-8">
-              <ImageUploader onImageUpload={handleImageUpload} disabled={isLoading} />
+              <FileUpload onImageUpload={handleImageUpload} disabled={isLoading} />
             </div>
           )}
           
