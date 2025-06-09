@@ -1,13 +1,12 @@
-import React from 'react';
-
 export default function LoadingState() {
   return (
-    <div className="flex flex-col items-center justify-center py-8">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-      <h3 className="text-xl font-medium text-slate-800">Identifying your car...</h3>
-      <p className="text-slate-600 mt-2 text-center">
-        Our AI is analyzing the image to identify the make, model and specifications.
-      </p>
+    <div className="mt-10 flex flex-col items-center">
+      <div className="relative">
+        <div className="h-20 w-20 rounded-full border-t-4 border-b-4 border-blue-500 animate-spin"></div>
+        <div className="absolute top-0 left-0 h-20 w-20 rounded-full border-t-4 border-b-4 border-transparent border-r-4 border-l-4 border-r-white/20 border-l-white/20 animate-pulse"></div>
+      </div>
+      <p className="mt-4 text-lg text-gray-300">Processing your request...</p>
+      <p className="text-sm text-gray-400 mt-2">Getting car specifications</p>
     </div>
   );
 }
